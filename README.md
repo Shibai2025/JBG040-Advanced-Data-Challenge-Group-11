@@ -1,5 +1,5 @@
 # Data-Challenge-1-template-code
-This repository contains the template code for the TU/e course JBG040 Data Challenge 1.
+This repository contains the template code for the TU/e course JBG040 Advanced Data Challenge.
 Please read this document carefully as it has been filled out with important information.
 
 ## Code structure
@@ -8,7 +8,7 @@ There are five `.py` files in total, each containing a different part of the cod
 Feel free to create new files to explore the data or experiment with other ideas.
 
 - To download the data: 
-  - Log in to Canvas, go to course JBG040 (2024-3) Data Challenge 1.
+  - Log in to Canvas, go to course JBG040 (2025-3) Advanced Data Challenge.
   - Go to the Files page. 
   - Download the four files `X_test.npy`, `X_train.npy`, `Y_test.npy` and `Y_train.npy`.
   - Create a folder called `data` in `dc1\`.

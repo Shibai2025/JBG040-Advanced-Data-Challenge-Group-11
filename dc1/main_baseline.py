@@ -93,10 +93,10 @@ def main(args: argparse.Namespace, activeloop: bool = True) -> None:
 
     # Lets now train and test our model for multiple epochs:
     train_sampler = BatchSampler(
-        batch_size=batch_size, dataset=train_dataset, balanced=args.balanced_batches
+        batch_size=batch_size, dataset=train_dataset, balanced= False
     )
     test_sampler = BatchSampler(
-        batch_size=100, dataset=test_dataset, balanced=args.balanced_batches
+        batch_size=100, dataset=test_dataset, balanced= False
     )
 
     mean_losses_train: List[torch.Tensor] = []
@@ -236,7 +236,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--balanced_batches",
         help="whether to balance batches for class labels",
-        default=True,
+        default=False,
         type=bool,
     )
     args = parser.parse_args()

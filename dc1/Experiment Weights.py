@@ -67,7 +67,7 @@ def main(args: argparse.Namespace, activeloop: bool = True) -> None:
 
     class_names = ["Atelectasis", "Effusion", "Infiltration", "No Finding", "Nodule", "Pneumothorax"]
 
-    active_weight_set_name = "2nd run"
+    active_weight_set_name = "5th run"
     active_weight_values = weight_sets[active_weight_set_name]
 
     # Load the Neural Net. NOTE: set number of distinct labels here
@@ -248,7 +248,7 @@ def main(args: argparse.Namespace, activeloop: bool = True) -> None:
     # ========================================================================
 
 
-if __name__ == "_main_":
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument(

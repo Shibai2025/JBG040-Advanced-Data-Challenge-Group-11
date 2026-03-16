@@ -1,0 +1,521 @@
+{
+  "candidate_type": "model",
+  "label": "experiment_imbalance_experiment_severity_weighted_loss_adamw_run_20260316_022949",
+  "source_path": "/Users/shibai/Documents/TUE study materials/TUE 2025 - 2026/Q3 2025-2026/JBG040 Advanced Data Challenge/dc1/experiments/experiment_imbalance/experiment_severity_weighted_loss_adamw/model_weights/baseline_severity_weighted_loss_adamw_best/run_20260316_022949/best_model.pt",
+  "experiment_group": "experiment_imbalance",
+  "experiment_name": "experiment_severity_weighted_loss_adamw",
+  "run_id": "run_20260316_022949",
+  "architecture_hint": "baseline",
+  "source_model_path": null,
+  "selected_threshold": null,
+  "device": "mps",
+  "n_classes": 6,
+  "total_samples": 8420,
+  "kept_samples": 8420,
+  "coverage": 1.0,
+  "average_loss": 1.5627609500379274,
+  "accuracy": 0.34750593824228027,
+  "macro_f1": 0.28697598019974274,
+  "confusion_matrix": [
+    [
+      578,
+      216,
+      233,
+      204,
+      0,
+      23
+    ],
+    [
+      223,
+      622,
+      230,
+      98,
+      0,
+      45
+    ],
+    [
+      265,
+      324,
+      577,
+      339,
+      0,
+      32
+    ],
+    [
+      590,
+      338,
+      894,
+      1037,
+      0,
+      65
+    ],
+    [
+      172,
+      92,
+      227,
+      290,
+      0,
+      25
+    ],
+    [
+      106,
+      140,
+      210,
+      113,
+      0,
+      112
+    ]
+  ],
+  "per_class_metrics": [
+    {
+      "class_index": 0,
+      "class_name": "Atelectasis",
+      "precision": 0.2988624612202689,
+      "recall": 0.4609250398724083,
+      "f1": 0.3626097867001255,
+      "support": 1254
+    },
+    {
+      "class_index": 1,
+      "class_name": "Effusion",
+      "precision": 0.35912240184757505,
+      "recall": 0.5106732348111659,
+      "f1": 0.4216949152542373,
+      "support": 1218
+    },
+    {
+      "class_index": 2,
+      "class_name": "Infiltration",
+      "precision": 0.24335723323492198,
+      "recall": 0.3754066363044893,
+      "f1": 0.2952917093142272,
+      "support": 1537
+    },
+    {
+      "class_index": 3,
+      "class_name": "No Finding",
+      "precision": 0.4983181162902451,
+      "recall": 0.3546511627906977,
+      "f1": 0.41438561438561444,
+      "support": 2924
+    },
+    {
+      "class_index": 4,
+      "class_name": "Nodule",
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "support": 806
+    },
+    {
+      "class_index": 5,
+      "class_name": "Pneumothorax",
+      "precision": 0.3708609271523179,
+      "recall": 0.1644640234948605,
+      "f1": 0.22787385554425227,
+      "support": 681
+    }
+  ],
+  "per_class_stats": [
+    {
+      "class_index": 0,
+      "class_name": "Atelectasis",
+      "TP": 578,
+      "FP": 1356,
+      "FN": 676,
+      "TN": 5810
+    },
+    {
+      "class_index": 1,
+      "class_name": "Effusion",
+      "TP": 622,
+      "FP": 1110,
+      "FN": 596,
+      "TN": 6092
+    },
+    {
+      "class_index": 2,
+      "class_name": "Infiltration",
+      "TP": 577,
+      "FP": 1794,
+      "FN": 960,
+      "TN": 5089
+    },
+    {
+      "class_index": 3,
+      "class_name": "No Finding",
+      "TP": 1037,
+      "FP": 1044,
+      "FN": 1887,
+      "TN": 4452
+    },
+    {
+      "class_index": 4,
+      "class_name": "Nodule",
+      "TP": 0,
+      "FP": 0,
+      "FN": 806,
+      "TN": 7614
+    },
+    {
+      "class_index": 5,
+      "class_name": "Pneumothorax",
+      "TP": 112,
+      "FP": 190,
+      "FN": 569,
+      "TN": 7549
+    }
+  ],
+  "selective_curve": [
+    {
+      "threshold": 0.0,
+      "coverage": 1.0,
+      "accuracy": 0.34750593824228027,
+      "macro_f1": 0.28697598019974274,
+      "kept_samples": 8420
+    },
+    {
+      "threshold": 0.02020408163265306,
+      "coverage": 1.0,
+      "accuracy": 0.34750593824228027,
+      "macro_f1": 0.28697598019974274,
+      "kept_samples": 8420
+    },
+    {
+      "threshold": 0.04040816326530612,
+      "coverage": 1.0,
+      "accuracy": 0.34750593824228027,
+      "macro_f1": 0.28697598019974274,
+      "kept_samples": 8420
+    },
+    {
+      "threshold": 0.06061224489795918,
+      "coverage": 1.0,
+      "accuracy": 0.34750593824228027,
+      "macro_f1": 0.28697598019974274,
+      "kept_samples": 8420
+    },
+    {
+      "threshold": 0.08081632653061224,
+      "coverage": 1.0,
+      "accuracy": 0.34750593824228027,
+      "macro_f1": 0.28697598019974274,
+      "kept_samples": 8420
+    },
+    {
+      "threshold": 0.1010204081632653,
+      "coverage": 1.0,
+      "accuracy": 0.34750593824228027,
+      "macro_f1": 0.28697598019974274,
+      "kept_samples": 8420
+    },
+    {
+      "threshold": 0.12122448979591836,
+      "coverage": 1.0,
+      "accuracy": 0.34750593824228027,
+      "macro_f1": 0.28697598019974274,
+      "kept_samples": 8420
+    },
+    {
+      "threshold": 0.14142857142857143,
+      "coverage": 1.0,
+      "accuracy": 0.34750593824228027,
+      "macro_f1": 0.28697598019974274,
+      "kept_samples": 8420
+    },
+    {
+      "threshold": 0.16163265306122448,
+      "coverage": 1.0,
+      "accuracy": 0.34750593824228027,
+      "macro_f1": 0.28697598019974274,
+      "kept_samples": 8420
+    },
+    {
+      "threshold": 0.18183673469387754,
+      "coverage": 1.0,
+      "accuracy": 0.34750593824228027,
+      "macro_f1": 0.28697598019974274,
+      "kept_samples": 8420
+    },
+    {
+      "threshold": 0.2020408163265306,
+      "coverage": 0.9995249406175772,
+      "accuracy": 0.34755228136882127,
+      "macro_f1": 0.2869875952884607,
+      "kept_samples": 8416
+    },
+    {
+      "threshold": 0.22224489795918367,
+      "coverage": 0.9915676959619952,
+      "accuracy": 0.34782608695652173,
+      "macro_f1": 0.28658209698249454,
+      "kept_samples": 8349
+    },
+    {
+      "threshold": 0.24244897959183673,
+      "coverage": 0.9686460807600951,
+      "accuracy": 0.3516429622363904,
+      "macro_f1": 0.28967049618853874,
+      "kept_samples": 8156
+    },
+    {
+      "threshold": 0.2626530612244898,
+      "coverage": 0.921852731591449,
+      "accuracy": 0.35802628188611185,
+      "macro_f1": 0.29579898551621964,
+      "kept_samples": 7762
+    },
+    {
+      "threshold": 0.28285714285714286,
+      "coverage": 0.8480997624703088,
+      "accuracy": 0.36647528357372916,
+      "macro_f1": 0.3030181906762089,
+      "kept_samples": 7141
+    },
+    {
+      "threshold": 0.3030612244897959,
+      "coverage": 0.7561757719714964,
+      "accuracy": 0.373488299041935,
+      "macro_f1": 0.30690947169887006,
+      "kept_samples": 6367
+    },
+    {
+      "threshold": 0.32326530612244897,
+      "coverage": 0.6463182897862233,
+      "accuracy": 0.3910327085630283,
+      "macro_f1": 0.3193250524658254,
+      "kept_samples": 5442
+    },
+    {
+      "threshold": 0.34346938775510205,
+      "coverage": 0.540498812351544,
+      "accuracy": 0.4012304987914744,
+      "macro_f1": 0.3251822275101555,
+      "kept_samples": 4551
+    },
+    {
+      "threshold": 0.3636734693877551,
+      "coverage": 0.4483372921615202,
+      "accuracy": 0.4119205298013245,
+      "macro_f1": 0.3336542844260098,
+      "kept_samples": 3775
+    },
+    {
+      "threshold": 0.38387755102040816,
+      "coverage": 0.36270783847981,
+      "accuracy": 0.42829076620825146,
+      "macro_f1": 0.346303896949492,
+      "kept_samples": 3054
+    },
+    {
+      "threshold": 0.4040816326530612,
+      "coverage": 0.29061757719714965,
+      "accuracy": 0.44094809971393545,
+      "macro_f1": 0.3542865000854802,
+      "kept_samples": 2447
+    },
+    {
+      "threshold": 0.42428571428571427,
+      "coverage": 0.22885985748218526,
+      "accuracy": 0.45407368967306694,
+      "macro_f1": 0.350209751880739,
+      "kept_samples": 1927
+    },
+    {
+      "threshold": 0.44448979591836735,
+      "coverage": 0.17660332541567697,
+      "accuracy": 0.47074646940147946,
+      "macro_f1": 0.35363308253511366,
+      "kept_samples": 1487
+    },
+    {
+      "threshold": 0.4646938775510204,
+      "coverage": 0.13634204275534442,
+      "accuracy": 0.48606271777003485,
+      "macro_f1": 0.35723208311997917,
+      "kept_samples": 1148
+    },
+    {
+      "threshold": 0.48489795918367345,
+      "coverage": 0.10926365795724466,
+      "accuracy": 0.5043478260869565,
+      "macro_f1": 0.3542571100206488,
+      "kept_samples": 920
+    },
+    {
+      "threshold": 0.5051020408163265,
+      "coverage": 0.08800475059382423,
+      "accuracy": 0.5236167341430499,
+      "macro_f1": 0.35455778020285655,
+      "kept_samples": 741
+    },
+    {
+      "threshold": 0.5253061224489796,
+      "coverage": 0.07030878859857483,
+      "accuracy": 0.5287162162162162,
+      "macro_f1": 0.32979131171776305,
+      "kept_samples": 592
+    },
+    {
+      "threshold": 0.5455102040816326,
+      "coverage": 0.05712589073634204,
+      "accuracy": 0.5467775467775468,
+      "macro_f1": 0.3259532097277525,
+      "kept_samples": 481
+    },
+    {
+      "threshold": 0.5657142857142857,
+      "coverage": 0.04608076009501188,
+      "accuracy": 0.5618556701030928,
+      "macro_f1": 0.31760465617580763,
+      "kept_samples": 388
+    },
+    {
+      "threshold": 0.5859183673469388,
+      "coverage": 0.03693586698337292,
+      "accuracy": 0.5562700964630225,
+      "macro_f1": 0.30103157059841495,
+      "kept_samples": 311
+    },
+    {
+      "threshold": 0.6061224489795918,
+      "coverage": 0.030641330166270783,
+      "accuracy": 0.5775193798449613,
+      "macro_f1": 0.2989997531579682,
+      "kept_samples": 258
+    },
+    {
+      "threshold": 0.6263265306122449,
+      "coverage": 0.024346793349168647,
+      "accuracy": 0.6146341463414634,
+      "macro_f1": 0.29714933941538113,
+      "kept_samples": 205
+    },
+    {
+      "threshold": 0.6465306122448979,
+      "coverage": 0.019714964370546317,
+      "accuracy": 0.6144578313253012,
+      "macro_f1": 0.2790197688270711,
+      "kept_samples": 166
+    },
+    {
+      "threshold": 0.666734693877551,
+      "coverage": 0.015676959619952493,
+      "accuracy": 0.6363636363636364,
+      "macro_f1": 0.29245813288366485,
+      "kept_samples": 132
+    },
+    {
+      "threshold": 0.6869387755102041,
+      "coverage": 0.012589073634204275,
+      "accuracy": 0.6698113207547169,
+      "macro_f1": 0.30329485329485323,
+      "kept_samples": 106
+    },
+    {
+      "threshold": 0.7071428571428571,
+      "coverage": 0.009382422802850357,
+      "accuracy": 0.7088607594936709,
+      "macro_f1": 0.31347042882193527,
+      "kept_samples": 79
+    },
+    {
+      "threshold": 0.7273469387755102,
+      "coverage": 0.008669833729216153,
+      "accuracy": 0.726027397260274,
+      "macro_f1": 0.2995929995929996,
+      "kept_samples": 73
+    },
+    {
+      "threshold": 0.7475510204081632,
+      "coverage": 0.0059382422802850355,
+      "accuracy": 0.72,
+      "macro_f1": 0.3089430894308943,
+      "kept_samples": 50
+    },
+    {
+      "threshold": 0.7677551020408163,
+      "coverage": 0.004275534441805225,
+      "accuracy": 0.6944444444444444,
+      "macro_f1": 0.30459770114942525,
+      "kept_samples": 36
+    },
+    {
+      "threshold": 0.7879591836734694,
+      "coverage": 0.0030878859857482186,
+      "accuracy": 0.7307692307692307,
+      "macro_f1": 0.14074074074074075,
+      "kept_samples": 26
+    },
+    {
+      "threshold": 0.8081632653061224,
+      "coverage": 0.0020190023752969122,
+      "accuracy": 0.8235294117647058,
+      "macro_f1": 0.15053763440860216,
+      "kept_samples": 17
+    },
+    {
+      "threshold": 0.8283673469387755,
+      "coverage": 0.00166270783847981,
+      "accuracy": 0.7857142857142857,
+      "macro_f1": 0.14666666666666667,
+      "kept_samples": 14
+    },
+    {
+      "threshold": 0.8485714285714285,
+      "coverage": 0.0014251781472684087,
+      "accuracy": 0.75,
+      "macro_f1": 0.14285714285714285,
+      "kept_samples": 12
+    },
+    {
+      "threshold": 0.8687755102040816,
+      "coverage": 0.00047505938242280285,
+      "accuracy": 0.5,
+      "macro_f1": 0.1111111111111111,
+      "kept_samples": 4
+    },
+    {
+      "threshold": 0.8889795918367347,
+      "coverage": 0.00023752969121140142,
+      "accuracy": 1.0,
+      "macro_f1": 0.16666666666666666,
+      "kept_samples": 2
+    },
+    {
+      "threshold": 0.9091836734693878,
+      "coverage": 0.0,
+      "accuracy": 0.0,
+      "macro_f1": 0.0,
+      "kept_samples": 0
+    },
+    {
+      "threshold": 0.9293877551020407,
+      "coverage": 0.0,
+      "accuracy": 0.0,
+      "macro_f1": 0.0,
+      "kept_samples": 0
+    },
+    {
+      "threshold": 0.9495918367346938,
+      "coverage": 0.0,
+      "accuracy": 0.0,
+      "macro_f1": 0.0,
+      "kept_samples": 0
+    },
+    {
+      "threshold": 0.9697959183673469,
+      "coverage": 0.0,
+      "accuracy": 0.0,
+      "macro_f1": 0.0,
+      "kept_samples": 0
+    },
+    {
+      "threshold": 0.99,
+      "coverage": 0.0,
+      "accuracy": 0.0,
+      "macro_f1": 0.0,
+      "kept_samples": 0
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+Experiment Evaluation
+=====================
+
+Candidate type: model
+Label: experiment_optimizer_adam_run_20260316_003813
+Source path: /Users/shibai/Documents/TUE study materials/TUE 2025 - 2026/Q3 2025-2026/JBG040 Advanced Data Challenge/dc1/experiments/experiment_optimizer/adam/model_weights/baseline_adam_best/run_20260316_003813/best_model.pt
+Experiment group: experiment_optimizer
+Experiment name: adam
+Run id: run_20260316_003813
+Architecture hint: baseline
+Source model path: None
+Selected threshold: None
+Device: mps
+Total test samples: 8420
+Kept samples: 8420
+Coverage: 1.000000
+
+Average loss: 1.552926
+Accuracy: 0.381473
+Macro-F1: 0.191190

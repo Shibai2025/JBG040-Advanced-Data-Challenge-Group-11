@@ -1,0 +1,20 @@
+Experiment Evaluation
+=====================
+
+Candidate type: threshold
+Label: experiment_threshold_severity_weighted_loss_adamw_run_20260316_035417_threshold
+Source path: /Users/shibai/Documents/TUE study materials/TUE 2025 - 2026/Q3 2025-2026/JBG040 Advanced Data Challenge/dc1/experiments/experiment_threshold/severity_weighted_loss_adamw/model_weights/severity_weighted_loss_adamw_threshold_best/run_20260316_035417/best_threshold_config.json
+Experiment group: experiment_threshold
+Experiment name: severity_weighted_loss_adamw
+Run id: run_20260316_035417
+Architecture hint: baseline
+Source model path: /Users/shibai/Documents/TUE study materials/TUE 2025 - 2026/Q3 2025-2026/JBG040 Advanced Data Challenge/dc1/experiments/experiment_imbalance/experiment_severity_weighted_loss_adamw/model_weights/baseline_severity_weighted_loss_adamw_best/run_20260316_022949/best_model.pt
+Selected threshold: 0.3500000000000001
+Device: mps
+Total test samples: 8420
+Kept samples: 4301
+Coverage: 0.510808
+
+Average loss: 1.562781
+Accuracy: 0.406185
+Macro-F1: 0.328947

@@ -1,0 +1,20 @@
+Experiment Evaluation
+=====================
+
+Candidate type: threshold
+Label: experiment_threshold_balanced_batch_adamw_run_20260316_035417_threshold
+Source path: /Users/shibai/Documents/TUE study materials/TUE 2025 - 2026/Q3 2025-2026/JBG040 Advanced Data Challenge/dc1/experiments/experiment_threshold/balanced_batch_adamw/model_weights/balanced_batch_adamw_threshold_best/run_20260316_035417/best_threshold_config.json
+Experiment group: experiment_threshold
+Experiment name: balanced_batch_adamw
+Run id: run_20260316_035417
+Architecture hint: baseline
+Source model path: /Users/shibai/Documents/TUE study materials/TUE 2025 - 2026/Q3 2025-2026/JBG040 Advanced Data Challenge/dc1/experiments/experiment_imbalance/experiment_balanced_batch_adamw/model_weights/baseline_balanced_batch_adamw_best/run_20260316_022949/best_model.pt
+Selected threshold: 0.30000000000000004
+Device: mps
+Total test samples: 8420
+Kept samples: 4727
+Coverage: 0.561401
+
+Average loss: 1.608251
+Accuracy: 0.358790
+Macro-F1: 0.323252

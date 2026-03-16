@@ -1,0 +1,15 @@
+Experiment Evaluation Aggregate Summary
+=======================================
+
+Total evaluated items: 8
+
+Rank   Type       Label                                      Macro-F1   Accuracy   Coverage
+--------------------------------------------------------------------------------------------------
+1      threshold  experiment_threshold_severity_weighted_l     0.3289     0.4062     0.5108
+2      threshold  experiment_threshold_balanced_batch_adam     0.3233     0.3588     0.5614
+3      model      experiment_imbalance_experiment_no_imbal     0.2996     0.4160     1.0000
+4      model      experiment_imbalance_experiment_balanced     0.2974     0.3178     1.0000
+5      model      experiment_imbalance_experiment_severity     0.2870     0.3475     1.0000
+6      model      experiment_optimizer_adamw_run_20260316_     0.1912     0.3815     1.0000
+7      model      experiment_optimizer_adam_run_20260316_0     0.1912     0.3815     1.0000
+8      model      experiment_optimizer_sgd_run_20260316_00     0.1564     0.3607     1.0000

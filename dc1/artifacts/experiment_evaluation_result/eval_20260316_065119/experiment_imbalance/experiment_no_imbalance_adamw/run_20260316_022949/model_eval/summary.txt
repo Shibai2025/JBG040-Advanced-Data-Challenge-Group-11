@@ -1,0 +1,20 @@
+Experiment Evaluation
+=====================
+
+Candidate type: model
+Label: experiment_imbalance_experiment_no_imbalance_adamw_run_20260316_022949
+Source path: /Users/shibai/Documents/TUE study materials/TUE 2025 - 2026/Q3 2025-2026/JBG040 Advanced Data Challenge/dc1/experiments/experiment_imbalance/experiment_no_imbalance_adamw/model_weights/baseline_no_imbalance_adamw_best/run_20260316_022949/best_model.pt
+Experiment group: experiment_imbalance
+Experiment name: experiment_no_imbalance_adamw
+Run id: run_20260316_022949
+Architecture hint: baseline
+Source model path: None
+Selected threshold: None
+Device: mps
+Total test samples: 8420
+Kept samples: 8420
+Coverage: 1.000000
+
+Average loss: 1.489095
+Accuracy: 0.416033
+Macro-F1: 0.299562

@@ -1,145 +1,154 @@
-# Custom imports
-from dc1.batch_sampler import BatchSampler
-from dc1.image_dataset import ImageDataset
-from dc1.net import Net
-from dc1.train_test import train_model, test_model
+from __future__ import annotations
 
-# Torch imports
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torchsummary import summary  # type: ignore
-
-# Other imports
-import matplotlib.pyplot as plt  # type: ignore
-from matplotlib.pyplot import figure
-import os
 import argparse
-import plotext  # type: ignore
-from datetime import datetime
+import subprocess
+import sys
 from pathlib import Path
-from typing import List
 
 
-def main(args: argparse.Namespace, activeloop: bool = True) -> None:
+def run_step(step_name: str, cmd: list[str], cwd: Path) -> None:
+    print("\n" + "=" * 100)
+    print(f"RUNNING STEP: {step_name}")
+    print("COMMAND:", " ".join(cmd))
+    print("=" * 100)
 
-    # Load the train and test data set
-    train_dataset = ImageDataset(Path("data/X_train.npy"), Path("data/Y_train.npy"))
-    test_dataset = ImageDataset(Path("data/X_test.npy"), Path("data/Y_test.npy"))
+    result = subprocess.run(cmd, cwd=str(cwd))
+    if result.returncode != 0:
+        raise RuntimeError(f"Step failed: {step_name} (exit code {result.returncode})")
 
-    # Load the Neural Net. NOTE: set number of distinct labels here
-    model = Net(n_classes=6)
 
-    # Initialize optimizer(s) and loss function(s)
-    optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.1)
-    loss_function = nn.CrossEntropyLoss()
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Run the full experiment pipeline from one entry point."
+    )
 
-    # fetch epoch and batch count from arguments
-    n_epochs = args.nb_epochs
-    batch_size = args.batch_size
+    # Optional switches: still useful for debugging specific stages
+    parser.add_argument("--run_optimizer", action="store_true", help="Run only optimizer experiment.")
+    parser.add_argument("--run_imbalance", action="store_true", help="Run only imbalance experiment.")
+    parser.add_argument("--run_threshold", action="store_true", help="Run only threshold experiment.")
+    parser.add_argument("--run_evaluation", action="store_true", help="Run only final evaluation.")
+    parser.add_argument("--run_gradcam", action="store_true", help="Run only Grad-CAM experiment.")
 
-    # IMPORTANT! Set this to True to see actual errors regarding
-    # the structure of your model (GPU acceleration hides them)!
-    # Also make sure you set this to False again for actual model training
-    # as training your model with GPU-acceleration (CUDA/MPS) is much faster.
-    DEBUG = False
+    parser.add_argument("--force_cpu", action="store_true", help="Force CPU even if CUDA is available.")
+    parser.add_argument("--seed", type=int, default=42, help="Random seed.")
+    parser.add_argument("--epochs", type=int, default=10, help="Training epochs.")
+    parser.add_argument("--batch_size", type=int, default=25, help="Training batch size.")
+    parser.add_argument("--val_batch_size", type=int, default=100, help="Validation/test batch size.")
+    parser.add_argument("--val_ratio", type=float, default=0.2, help="Validation split ratio.")
 
-    # Moving our model to the right device (CUDA will speed training up significantly!)
-    if torch.cuda.is_available() and not DEBUG:
-        print("@@@ CUDA device found, enabling CUDA training...")
-        device = "cuda"
-        model.to(device)
-        # Creating a summary of our model and its layers:
-        summary(model, (1, 128, 128), device=device)
-    elif (
-        torch.backends.mps.is_available() and not DEBUG
-    ):  # PyTorch supports Apple Silicon GPU's from version 1.12
-        print("@@@ Apple silicon device enabled, training with Metal backend...")
-        device = "mps"
-        model.to(device)
+    return parser
+
+
+def main() -> None:
+    args = build_parser().parse_args()
+
+    base_dir = Path(__file__).resolve().parent
+    python_exe = sys.executable
+
+    # If user gives no stage flags, run the full pipeline by default
+    any_stage_selected = any([
+        args.run_optimizer,
+        args.run_imbalance,
+        args.run_threshold,
+        args.run_evaluation,
+        args.run_gradcam,
+    ])
+
+    if any_stage_selected:
+        run_optimizer = args.run_optimizer
+        run_imbalance = args.run_imbalance
+        run_threshold = args.run_threshold
+        run_evaluation = args.run_evaluation
+        run_gradcam = args.run_gradcam
+        print("Specific pipeline stages selected by user.")
     else:
-        print("@@@ No GPU boosting device found, training on CPU...")
-        device = "cpu"
-        # Creating a summary of our model and its layers:
-        summary(model, (1, 128, 128), device=device)
+        run_optimizer = True
+        run_imbalance = True
+        run_threshold = True
+        run_evaluation = True
+        run_gradcam = True
+        print("No specific stage selected. Running the full pipeline by default.")
 
-    # Lets now train and test our model for multiple epochs:
-    train_sampler = BatchSampler(
-        batch_size=batch_size, dataset=train_dataset, balanced=args.balanced_batches
-    )
-    test_sampler = BatchSampler(
-        batch_size=100, dataset=test_dataset, balanced=args.balanced_batches
-    )
+    common_flags: list[str] = []
+    if args.force_cpu:
+        common_flags.append("--force_cpu")
 
-    mean_losses_train: List[torch.Tensor] = []
-    mean_losses_test: List[torch.Tensor] = []
-    
-    for e in range(n_epochs):
-        if activeloop:
+    try:
+        if run_optimizer:
+            cmd = [
+                python_exe,
+                "main_experiment_optimizer.py",
+                "--nb_epochs",
+                str(args.epochs),
+                "--batch_size",
+                str(args.batch_size),
+                "--val_batch_size",
+                str(args.val_batch_size),
+                "--seed",
+                str(args.seed),
+                "--val_ratio",
+                str(args.val_ratio),
+            ] + common_flags
+            run_step("Optimizer Experiment", cmd, base_dir)
 
-            # Training:
-            losses = train_model(model, train_sampler, optimizer, loss_function, device)
-            # Calculating and printing statistics:
-            mean_loss = sum(losses) / len(losses)
-            mean_losses_train.append(mean_loss)
-            print(f"\nEpoch {e + 1} training done, loss on train set: {mean_loss}\n")
+        if run_imbalance:
+            cmd = [
+                python_exe,
+                "main_experiment_imbalance.py",
+                "--epochs",
+                str(args.epochs),
+                "--batch_size",
+                str(args.batch_size),
+                "--seed",
+                str(args.seed),
+                "--val_ratio",
+                str(args.val_ratio),
+            ] + common_flags
+            run_step("Imbalance Experiment", cmd, base_dir)
 
-            # Testing:
-            losses = test_model(model, test_sampler, loss_function, device)
+        if run_threshold:
+            cmd = [
+                python_exe,
+                "main_experiment_threshold.py",
+                "--batch_size",
+                str(args.val_batch_size),
+                "--seed",
+                str(args.seed),
+                "--val_ratio",
+                str(args.val_ratio),
+            ] + common_flags
+            run_step("Threshold Experiment", cmd, base_dir)
 
-            # # Calculating and printing statistics:
-            mean_loss = sum(losses) / len(losses)
-            mean_losses_test.append(mean_loss)
-            print(f"\nEpoch {e + 1} testing done, loss on test set: {mean_loss}\n")
+        if run_evaluation:
+            cmd = [
+                python_exe,
+                "experiment_evaluation.py",
+                "--batch_size",
+                str(args.val_batch_size),
+            ] + common_flags
+            run_step("Experiment Evaluation", cmd, base_dir)
 
-            ### Plotting during training
-            plotext.clf()
-            plotext.scatter(mean_losses_train, label="train")
-            plotext.scatter(mean_losses_test, label="test")
-            plotext.title("Train and test loss")
+        if run_gradcam:
+            cmd = [
+                python_exe,
+                "run_gradcam_experiment.py",
+                "--comparison_mode",
+                "same_sample_multi_model",
+            ] + common_flags
+            run_step("Grad-CAM Experiment", cmd, base_dir)
 
-            plotext.xticks([i for i in range(len(mean_losses_train) + 1)])
+        print("\n" + "=" * 100)
+        print("Pipeline completed successfully.")
+        print("All selected experiments and evaluations have finished.")
+        print("=" * 100)
 
-            plotext.show()
-
-    # retrieve current time to label artifacts
-    now = datetime.now()
-    # check if model_weights/ subdir exists
-    if not Path("model_weights/").exists():
-        os.mkdir(Path("model_weights/"))
-    
-    # Saving the model
-    torch.save(model.state_dict(), f"model_weights/model_{now.month:02}_{now.day:02}_{now.hour}_{now.minute:02}.txt")
-    
-    # Create plot of losses
-    figure(figsize=(9, 10), dpi=80)
-    fig, (ax1, ax2) = plt.subplots(2, sharex=True)
-    
-    ax1.plot(range(1, 1 + n_epochs), [x.detach().cpu() for x in mean_losses_train], label="Train", color="blue")
-    ax2.plot(range(1, 1 + n_epochs), [x.detach().cpu() for x in mean_losses_test], label="Test", color="red")
-    fig.legend()
-    
-    # Check if /artifacts/ subdir exists
-    if not Path("artifacts/").exists():
-        os.mkdir(Path("artifacts/"))
-
-    # save plot of losses
-    fig.savefig(Path("artifacts") / f"session_{now.month:02}_{now.day:02}_{now.hour}_{now.minute:02}.png")
+    except RuntimeError as exc:
+        print("\n" + "=" * 100)
+        print("Pipeline stopped.")
+        print(str(exc))
+        print("=" * 100)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument(
-        "--nb_epochs", help="number of training iterations", default=10, type=int
-    )
-    parser.add_argument("--batch_size", help="batch_size", default=25, type=int)
-    parser.add_argument(
-        "--balanced_batches",
-        help="whether to balance batches for class labels",
-        default=True,
-        type=bool,
-    )
-    args = parser.parse_args()
-
-    main(args)
+    main()

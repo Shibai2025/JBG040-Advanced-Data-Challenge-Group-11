@@ -36,14 +36,14 @@ class GradCAM:
         Save forward activations from the target layer.
         Expected shape: [B, C, H, W]
         """
-        self.activations = output_tensor
+        self.activations = output_tensor.detach()
 
     def _save_gradient(self, module, grad_input, grad_output):
         """
         Save backward gradients from the target layer.
         grad_output[0] usually has shape: [B, C, H, W]
         """
-        self.gradients = grad_output[0]
+        self.gradients = grad_output[0].detach()
 
     def remove_hooks(self):
         """
@@ -72,7 +72,6 @@ class GradCAM:
         if self.gradients is None:
             raise RuntimeError("Gradients are None. The backward hook may not have fired.")
 
-        # Single-image batch
         activations = self.activations[0]   # [C, h, w]
         gradients = self.gradients[0]       # [C, h, w]
 
@@ -129,6 +128,8 @@ class GradCAM:
             raise ValueError("input_image must have shape [1, C, H, W].")
 
         self.model.zero_grad()
+        self.activations = None
+        self.gradients = None
 
         logits = self.model(input_image)
         probs = torch.softmax(logits, dim=1)
@@ -145,6 +146,10 @@ class GradCAM:
     def generate_pred_true(self, input_image, true_class_idx):
         """
         Generate both predicted-class CAM and true-class CAM.
+
+        Important:
+        We must NOT clear self.activations after the forward pass,
+        because backward does not run forward hooks again.
 
         Args:
             input_image: torch.Tensor of shape [1, C, H, W]
@@ -164,19 +169,28 @@ class GradCAM:
         if input_image.dim() != 4 or input_image.size(0) != 1:
             raise ValueError("input_image must have shape [1, C, H, W].")
 
+        # One forward pass only
         self.model.zero_grad()
+        self.activations = None
+        self.gradients = None
+
         logits = self.model(input_image)
         probs = torch.softmax(logits, dim=1)
         pred_class = logits.argmax(dim=1).item()
 
+        if self.activations is None:
+            raise RuntimeError("Forward hook did not store activations.")
+
         # Predicted-class CAM
         self.model.zero_grad()
+        self.gradients = None
         pred_score = logits[:, pred_class]
         pred_score.backward(retain_graph=True)
         pred_cam = self._compute_cam_from_current_state(input_image)
 
         # True-class CAM
         self.model.zero_grad()
+        self.gradients = None
         true_score = logits[:, true_class_idx]
         true_score.backward(retain_graph=True)
         true_cam = self._compute_cam_from_current_state(input_image)

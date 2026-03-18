@@ -6,3 +6,5 @@ model_weights/
 artifacts/
 .DS_store
 __pycache__/
+experiments/
+out/

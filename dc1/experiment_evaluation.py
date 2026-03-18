@@ -355,16 +355,20 @@ def selective_prediction_curve(
 
 
 def save_json(data: Dict[str, object], output_path: Path) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
 
 def save_txt(lines: Sequence[str], output_path: Path) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
 
 
 def plot_confusion_matrix(cm: np.ndarray, class_names: Sequence[str], output_path: Path, normalize: bool = False) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
     matrix = cm.astype(float)
     title = "Confusion Matrix"
     fmt = "d"
@@ -397,8 +401,9 @@ def plot_confusion_matrix(cm: np.ndarray, class_names: Sequence[str], output_pat
     fig.savefig(output_path, bbox_inches="tight")
     plt.close(fig)
 
-
 def plot_selective_curve(selective_curve: Sequence[Dict[str, float]], output_path: Path) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
     if not selective_curve:
         return
 
@@ -418,7 +423,6 @@ def plot_selective_curve(selective_curve: Sequence[Dict[str, float]], output_pat
     fig.tight_layout()
     fig.savefig(output_path, bbox_inches="tight")
     plt.close(fig)
-
 
 def save_classification_report(
     per_class_metrics: Sequence[Dict[str, float]],

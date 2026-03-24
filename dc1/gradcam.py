@@ -148,7 +148,7 @@ class GradCAM:
         Generate both predicted-class CAM and true-class CAM.
 
         Important:
-        We must NOT clear self.activations after the forward pass,
++        We must NOT clear self.activations after the forward pass,
         because backward does not run forward hooks again.
 
         Args:

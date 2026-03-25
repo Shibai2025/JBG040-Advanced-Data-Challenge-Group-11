@@ -128,7 +128,7 @@ class ResNet18Transfer(nn.Module):
     """
     Fine-tunable ResNet18 for grayscale chest X-rays.
 
-    - Starts from pretrained ImageNet ResNet18.
+    - Loads local pretrained ImageNet ResNet18 weights.
     - Replaces conv1 to accept 1-channel input by averaging pretrained RGB kernels.
     - Replaces final FC layer with a 6-class classifier.
     - Applies grayscale normalization inside forward().
@@ -616,6 +616,11 @@ def train_single_setting(
     best_val_accuracy = 0.0
     best_confusion_matrix: Optional[np.ndarray] = None
 
+    epochs_without_improvement = 0
+    stopped_early = False
+    stopped_epoch: Optional[int] = None
+    last_epoch_completed = 0
+
     for epoch in range(1, args.epochs + 1):
         train_loss = train_one_epoch(
             model=model,
@@ -643,13 +648,11 @@ def train_single_setting(
         history["validation_accuracy"].append(val_accuracy)
         history["validation_macro_f1"].append(val_macro_f1)
 
-        is_better = (
-            val_macro_f1 > best_val_macro_f1
-            or (
-                np.isclose(val_macro_f1, best_val_macro_f1)
-                and val_loss < best_val_loss
-            )
-        )
+        improved_macro_f1 = val_macro_f1 > (best_val_macro_f1 + args.min_delta)
+        tied_macro_f1 = np.isclose(val_macro_f1, best_val_macro_f1)
+        better_on_tiebreak = tied_macro_f1 and (val_loss < best_val_loss)
+
+        is_better = improved_macro_f1 or better_on_tiebreak
 
         if is_better:
             best_val_macro_f1 = val_macro_f1
@@ -658,6 +661,11 @@ def train_single_setting(
             best_epoch = epoch
             best_state_dict = copy.deepcopy(model.state_dict())
             best_confusion_matrix = val_cm.copy()
+            epochs_without_improvement = 0
+        else:
+            epochs_without_improvement += 1
+
+        last_epoch_completed = epoch
 
         print(
             f"[{display_name}] Epoch {epoch:03d}/{args.epochs:03d} | "
@@ -666,6 +674,15 @@ def train_single_setting(
             f"val_acc={val_accuracy:.4f} | "
             f"val_macro_f1={val_macro_f1:.4f}"
         )
+
+        if args.early_stopping and epochs_without_improvement >= args.patience:
+            stopped_early = True
+            stopped_epoch = epoch
+            print(
+                f"@@@ Early stopping triggered at epoch {epoch} "
+                f"(patience={args.patience}, min_delta={args.min_delta})."
+            )
+            break
 
     if best_state_dict is None or best_epoch is None or best_confusion_matrix is None:
         raise RuntimeError(f"No valid best checkpoint was created for '{setting_name}'.")
@@ -748,13 +765,19 @@ def train_single_setting(
         "setting_name": setting_name,
         "setting_display_name": display_name,
         "optimizer": "AdamW",
-        "epochs": args.epochs,
+        "epochs_requested": args.epochs,
+        "epochs_completed": last_epoch_completed,
         "batch_size_train": args.batch_size,
         "batch_size_val": args.val_batch_size,
         "head_learning_rate": args.head_lr,
         "backbone_learning_rate": args.backbone_lr,
         "weight_decay": args.weight_decay,
         "balanced_train_batches": balanced_batches,
+        "early_stopping_enabled": args.early_stopping,
+        "patience": args.patience,
+        "min_delta": args.min_delta,
+        "stopped_early": stopped_early,
+        "stopped_epoch": stopped_epoch,
         "seed": args.seed,
         "deterministic": not args.non_deterministic,
         "device": device,
@@ -785,16 +808,27 @@ def train_single_setting(
         "best_validation_accuracy": best_val_accuracy,
         "best_validation_macro_f1": best_val_macro_f1,
         "best_model_path": str(best_model_path),
+        "early_stopping_enabled": args.early_stopping,
+        "patience": args.patience,
+        "min_delta": args.min_delta,
+        "stopped_early": stopped_early,
+        "stopped_epoch": stopped_epoch,
+        "epochs_completed": last_epoch_completed,
         "reference_threshold_macro_f1": args.reference_threshold_macro_f1,
         "beats_reference_thresholded_balanced_batch": bool(best_val_macro_f1 > args.reference_threshold_macro_f1),
     }
 
     final_report: Dict[str, object] = {
-        "final_epoch": args.epochs,
+        "final_epoch": last_epoch_completed,
         "final_validation_loss": history["validation_loss"][-1],
         "final_validation_accuracy": history["validation_accuracy"][-1],
         "final_validation_macro_f1": history["validation_macro_f1"][-1],
         "final_model_path": str(final_model_path) if final_model_path is not None else None,
+        "early_stopping_enabled": args.early_stopping,
+        "patience": args.patience,
+        "min_delta": args.min_delta,
+        "stopped_early": stopped_early,
+        "stopped_epoch": stopped_epoch,
     }
 
     save_json(run_config, best_artifacts_dir / "config.json")
@@ -813,6 +847,12 @@ def train_single_setting(
         f"Best validation loss: {best_val_loss:.6f}",
         f"Best validation accuracy: {best_val_accuracy:.6f}",
         f"Best validation macro-F1: {best_val_macro_f1:.6f}",
+        f"Early stopping enabled: {args.early_stopping}",
+        f"Patience: {args.patience}",
+        f"Min delta: {args.min_delta}",
+        f"Stopped early: {stopped_early}",
+        f"Stopped epoch: {stopped_epoch}",
+        f"Epochs completed: {last_epoch_completed}",
         f"Reference thresholded macro-F1: {args.reference_threshold_macro_f1:.6f}",
         f"Beats thresholded reference: {best_val_macro_f1 > args.reference_threshold_macro_f1}",
         f"Best model path: {best_model_path}",
@@ -823,6 +863,9 @@ def train_single_setting(
 
     print(f"\nCompleted balance-effect run: {display_name}")
     print(f"Best validation macro-F1: {best_val_macro_f1:.6f}")
+    print(f"Best epoch: {best_epoch}")
+    print(f"Stopped early: {stopped_early}")
+    print(f"Stopped epoch: {stopped_epoch}")
     print(f"Best artifacts dir      : {best_artifacts_dir}")
     print(f"Best model path         : {best_model_path}")
 
@@ -837,6 +880,12 @@ def train_single_setting(
         "best_artifacts_dir": str(best_artifacts_dir),
         "final_model_path": str(final_model_path) if final_model_path is not None else None,
         "final_artifacts_dir": str(final_artifacts_dir),
+        "epochs_completed": last_epoch_completed,
+        "early_stopping_enabled": args.early_stopping,
+        "patience": args.patience,
+        "min_delta": args.min_delta,
+        "stopped_early": stopped_early,
+        "stopped_epoch": stopped_epoch,
         "beats_reference_thresholded_balanced_batch": bool(best_val_macro_f1 > args.reference_threshold_macro_f1),
     }
 
@@ -898,6 +947,23 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         default=0.2803132184757912,
         help="Current thresholded balanced-batch validation macro-F1 reference to compare against.",
+    )
+    parser.add_argument(
+        "--early_stopping",
+        action="store_true",
+        help="Enable early stopping based on validation macro-F1.",
+    )
+    parser.add_argument(
+        "--patience",
+        type=int,
+        default=4,
+        help="Number of consecutive non-improving epochs before stopping.",
+    )
+    parser.add_argument(
+        "--min_delta",
+        type=float,
+        default=0.0,
+        help="Minimum macro-F1 improvement required to count as a new best.",
     )
     return parser
 
@@ -966,12 +1032,15 @@ def main() -> None:
         "architecture_name": "finetuned_resnet18",
         "seed": args.seed,
         "validation_ratio": args.val_ratio,
-        "epochs": args.epochs,
+        "epochs_requested": args.epochs,
         "batch_size": args.batch_size,
         "val_batch_size": args.val_batch_size,
         "head_learning_rate": args.head_lr,
         "backbone_learning_rate": args.backbone_lr,
         "weight_decay": args.weight_decay,
+        "early_stopping_enabled": args.early_stopping,
+        "patience": args.patience,
+        "min_delta": args.min_delta,
         "reference_threshold_macro_f1": args.reference_threshold_macro_f1,
         "results": results,
     }
@@ -983,6 +1052,9 @@ def main() -> None:
         f"Experiment group: {args.experiment_group}",
         "Architecture: finetuned_resnet18",
         f"Settings: {', '.join(str(r['setting_display_name']) for r in results)}",
+        f"Early stopping enabled: {args.early_stopping}",
+        f"Patience: {args.patience}",
+        f"Min delta: {args.min_delta}",
         f"Reference thresholded macro-F1: {args.reference_threshold_macro_f1:.6f}",
         "",
         "Best-checkpoint summary:",
@@ -993,6 +1065,9 @@ def main() -> None:
             [
                 f"- {result['setting_display_name']}:",
                 f"  best_epoch = {result['best_epoch']}",
+                f"  epochs_completed = {result['epochs_completed']}",
+                f"  stopped_early = {result['stopped_early']}",
+                f"  stopped_epoch = {result['stopped_epoch']}",
                 f"  best_validation_loss = {result['best_validation_loss']}",
                 f"  best_validation_accuracy = {result['best_validation_accuracy']}",
                 f"  best_validation_macro_f1 = {result['best_validation_macro_f1']}",

@@ -42,6 +42,32 @@ This means:
 So the project supports a **single entry point** for the full pipeline.
 
 ---
+## Additional Experiment: ResNet18 Transfer Learning
+
+In addition to the baseline CNN (net.py), we implemented ResNet18-based transfer learning to test whether stronger feature extraction improves performance.
+
+# Model Setup
+
+We use the ResNet18 architecture from TorchVision with the following modifications:
+
+1. Pretrained initialization. The model is initialized using ImageNet-pretrained weights.
+2. Local weight loading. Pretrained weights are stored locally at:
+   dc1/pretrained_weights/resnet18_imagenet.pth
+   and loaded from disk to avoid runtime downloads.
+3. Grayscale adaptation. Since X-ray images are single-channel, the first convolution layer is replaced and pretrained RGB filters are averaged to create a 1-channel input layer
+4. Classifier replacement. The final fully connected layer is replaced with a 6-class output layer.
+
+# Experiment Variants
+
+Two transfer-learning strategies were evaluated:
+
+1. Frozen ResNet18: only the classifier is trained
+2. Fine-tuned ResNet18: the entire network is trained (with separate learning rates for backbone and head)
+Additionally, the fine-tuned model is evaluated with and without balanced batches.
+
+# Purpose
+
+This experiment tests whether the performance limitations of the baseline model are due to insufficient model capacity.
 
 ## Project Structure
 
@@ -74,6 +100,8 @@ dc1/
 │   ├── X_test.npy
 │   ├── Y_train.npy
 │   └── Y_test.npy
+├── pretrained_weights/                     # Local pretrained ResNet18 weights (no external download required)
+│   └── resnet18_imagenet.pth
 │
 ├── experiments/                            # Saved training runs for each experiment stage
 │   ├── experiment_optimizer/

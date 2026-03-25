@@ -19,7 +19,7 @@ import torch.optim as optim
 from dc1.image_dataset import ImageDataset
 
 try:
-    from torchvision.models import ResNet18_Weights, resnet18
+    from torchvision.models import resnet18
 except Exception as exc:  # pragma: no cover
     raise ImportError(
         "torchvision with ResNet18 support is required for this experiment. "
@@ -137,8 +137,17 @@ class ResNet18Transfer(nn.Module):
     def __init__(self, n_classes: int) -> None:
         super().__init__()
 
-        weights = ResNet18_Weights.DEFAULT
-        backbone = resnet18(weights=weights)
+        weights_path = Path(__file__).resolve().parent / "pretrained_weights" / "resnet18_imagenet.pth"
+
+        if not weights_path.is_file():
+            raise FileNotFoundError(
+                f"Missing local pretrained weights file: {weights_path}\n"
+                "Expected local ResNet18 ImageNet weights for submission-safe transfer learning."
+            )
+
+        backbone = resnet18(weights=None)
+        state_dict = torch.load(weights_path, map_location="cpu")
+        backbone.load_state_dict(state_dict)
 
         old_conv = backbone.conv1
         new_conv = nn.Conv2d(

@@ -9,7 +9,7 @@ def generate_tuning_slideshows(x_path, output_dir, clip_limits=[1.0, 1.5, 2.0, 3
         os.makedirs(output_dir)
 
     print(f"Loading dataset from {x_path}...")
-    X_full = np.load(x_path)
+    x_full = np.load(x_path)
 
     # Mapping our labels to the indices for better folder naming
     labels = ["1_Extreme_Dark", "2_Lower_Quartile", "3_Median", "4_Upper_Quartile", "5_Extreme_Bright"]
@@ -20,7 +20,7 @@ def generate_tuning_slideshows(x_path, output_dir, clip_limits=[1.0, 1.5, 2.0, 3
             os.makedirs(patient_folder)
 
         # Get the image (assuming shape [1, 128, 128] or [128, 128])
-        img = X_full[idx].squeeze()
+        img = x_full[idx].squeeze()
 
         # Convert to 0-255 uint8 if it's float 0-1
         if img.max() <= 1.0:

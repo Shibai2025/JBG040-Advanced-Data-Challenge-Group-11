@@ -19,7 +19,7 @@ def crop_chest_bounding_box(img, padding=5):
     else:
         chosen_limit = 1.5  # Safe laser for normal/bright images
 
-    # 3. Create the Map
+    # Create the Map
     clahe = cv2.createCLAHE(clipLimit=chosen_limit, tileGridSize=(8, 8))
     enhanced = clahe.apply(working_img)
     blurred = cv2.GaussianBlur(enhanced, (5, 5), 0)
@@ -65,20 +65,17 @@ def crop_chest_bounding_box(img, padding=5):
     return final_resized_img
 
 
-# ==========================================
-# MAIN EXECUTION SCRIPT
-# ==========================================
 if __name__ == "__main__":
     input_path = "data/X_train.npy"
     output_path = "data/X_train_cropped.npy"
 
-    print(f"Loading dataset from {input_path}...")
+    print(f"Loading dataset from {input_path}")
     X_full = np.load(input_path)
 
     X_cropped_list = []
     total_images = len(X_full)
 
-    print(f"Starting Bounding Box Cropping on {total_images} images...")
+    print(f"Starting Bounding Box Cropping on {total_images} images")
 
     for i in range(total_images):
         img = X_full[i].squeeze()
@@ -92,7 +89,7 @@ if __name__ == "__main__":
         X_cropped_list.append(cropped)
 
         if (i + 1) % 1000 == 0:
-            print(f"Processed {i + 1} / {total_images} images...")
+            print(f"Processed {i + 1} / {total_images} images")
 
     print(f"Converting list to Numpy array...")
     X_cropped_array = np.array(X_cropped_list, dtype=np.uint8)

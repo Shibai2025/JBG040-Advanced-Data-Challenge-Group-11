@@ -17,6 +17,7 @@ from dc1.batch_sampler import BatchSampler
 from dc1.image_dataset import ImageDataset
 from dc1.net import Net
 
+from dc1.resnet import ResNet18Transfer
 
 CLASS_NAMES = [
     "Atelectasis",
@@ -42,6 +43,22 @@ EXPERIMENT_SETTINGS = {
         "threshold_experiment_group": "severity_weighted_loss_adamw",
         "threshold_experiment_name": "severity_weighted_loss_adamw_threshold",
         "imbalance_strategy": "severity_weighted_loss",
+        "optimizer": "AdamW",
+    },
+    "resnet18_transfer": {
+        "source_experiment_group": "experiment_resnet18_transfer",
+        "source_experiment_name": "architecture_test2_finetuned_resnet18",
+        "threshold_experiment_group": "resnet18_transfer",
+        "threshold_experiment_name": "resnet18_transfer_threshold",
+        "imbalance_strategy": "balanced_batch",
+        "optimizer": "AdamW",
+    },
+    "resnet18_balanced": {
+        "source_experiment_group": "experiment_resnet18_balance_effect",
+        "source_experiment_name": "architecture_test3_balanced_batch",
+        "threshold_experiment_group": "resnet18_balanced",
+        "threshold_experiment_name": "resnet18_balanced_threshold",
+        "imbalance_strategy": "balanced_batch",
         "optimizer": "AdamW",
     },
 }
@@ -119,9 +136,9 @@ def class_distribution(y: np.ndarray) -> Dict[str, int]:
 
 
 def stratified_split_indices(
-    y: np.ndarray,
-    val_ratio: float = 0.2,
-    seed: int = 42,
+        y: np.ndarray,
+        val_ratio: float = 0.2,
+        seed: int = 42,
 ) -> Tuple[np.ndarray, np.ndarray]:
     rng = np.random.default_rng(seed)
     y = np.asarray(y).reshape(-1).astype(int)
@@ -151,9 +168,9 @@ def stratified_split_indices(
 
 @torch.no_grad()
 def run_inference(
-    model: torch.nn.Module,
-    sampler: BatchSampler,
-    device: str,
+        model: torch.nn.Module,
+        sampler: BatchSampler,
+        device: str,
 ) -> Tuple[np.ndarray, np.ndarray]:
     model.eval()
 
@@ -194,8 +211,8 @@ def compute_accuracy(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 
 
 def compute_per_class_metrics(
-    cm: np.ndarray,
-    class_names: Optional[List[str]] = None,
+        cm: np.ndarray,
+        class_names: Optional[List[str]] = None,
 ) -> List[Dict[str, float]]:
     n_classes = cm.shape[0]
     if class_names is None:
@@ -228,8 +245,8 @@ def compute_per_class_metrics(
 
 
 def compute_per_class_stats(
-    cm: np.ndarray,
-    class_names: Optional[List[str]] = None,
+        cm: np.ndarray,
+        class_names: Optional[List[str]] = None,
 ) -> List[Dict[str, int]]:
     n_classes = cm.shape[0]
     if class_names is None:
@@ -265,9 +282,9 @@ def compute_macro_f1(cm: np.ndarray) -> float:
 
 
 def threshold_sweep(
-    y_true: np.ndarray,
-    y_prob: np.ndarray,
-    thresholds: np.ndarray,
+        y_true: np.ndarray,
+        y_prob: np.ndarray,
+        thresholds: np.ndarray,
 ) -> List[Dict[str, object]]:
     """
     Selective prediction based on confidence threshold:
@@ -334,8 +351,8 @@ def threshold_sweep(
 
 
 def select_best_threshold(
-    threshold_results: List[Dict[str, object]],
-    min_coverage: float = 0.5,
+        threshold_results: List[Dict[str, object]],
+        min_coverage: float = 0.5,
 ) -> Dict[str, object]:
     eligible = [
         item for item in threshold_results
@@ -358,10 +375,10 @@ def select_best_threshold(
 
 
 def compute_metrics_at_threshold(
-    y_true: np.ndarray,
-    y_prob: np.ndarray,
-    threshold: float,
-    class_names: Optional[List[str]] = None,
+        y_true: np.ndarray,
+        y_prob: np.ndarray,
+        threshold: float,
+        class_names: Optional[List[str]] = None,
 ) -> Dict[str, object]:
     if len(y_true) == 0 or y_prob.size == 0:
         return {
@@ -412,9 +429,9 @@ def compute_metrics_at_threshold(
 
 
 def save_threshold_curve(
-    threshold_results: List[Dict[str, object]],
-    out_path: Path,
-    title: str,
+        threshold_results: List[Dict[str, object]],
+        out_path: Path,
+        title: str,
 ) -> None:
     thresholds = [float(item["threshold"]) for item in threshold_results]
     macro_f1 = [float(item["macro_f1"]) for item in threshold_results]
@@ -475,10 +492,10 @@ def find_latest_run_dir(root_dir: Path) -> Path:
 
 
 def resolve_source_best_model_path(
-    base_dir: Path,
-    source_experiment_group: str,
-    source_experiment_name: str,
-    explicit_model_path: Optional[str] = None,
+        base_dir: Path,
+        source_experiment_group: str,
+        source_experiment_name: str,
+        explicit_model_path: Optional[str] = None,
 ) -> Path:
     if explicit_model_path is not None:
         model_path = Path(explicit_model_path).expanduser()
@@ -488,14 +505,10 @@ def resolve_source_best_model_path(
             raise FileNotFoundError(f"Explicit model path not found: {model_path}")
         return model_path
 
-    best_root = (
-        base_dir
-        / "experiments"
-        / "experiment_imbalance"
-        / source_experiment_group
-        / "model_weights"
-        / f"{source_experiment_name}_best"
-    )
+    best_root_imbalance = base_dir / "experiments" / "experiment_imbalance" / source_experiment_group / "model_weights" / f"{source_experiment_name}_best"
+    best_root_direct = base_dir / "experiments" / source_experiment_group / "model_weights" / f"{source_experiment_name}_best"
+
+    best_root = best_root_direct if best_root_direct.exists() else best_root_imbalance
 
     latest_run = find_latest_run_dir(best_root)
     model_path = latest_run / "best_model.pt"
@@ -506,8 +519,15 @@ def resolve_source_best_model_path(
     return model_path
 
 
-def load_model(model_path: Path, n_classes: int, device: str) -> Net:
-    model = Net(n_classes=n_classes).to(device)
+def load_model(model_path: Path, n_classes: int, device: str) -> nn.Module:
+    path_str = str(model_path).lower()
+
+    if "resnet18" in path_str:
+        mode = "frozen_resnet18" if "frozen" in path_str else "finetuned_resnet18"
+        model = ResNet18Transfer(n_classes=n_classes, mode=mode).to(device)
+    else:
+        model = Net(n_classes=n_classes).to(device)
+
     state_dict = torch.load(model_path, map_location=device)
     model.load_state_dict(state_dict)
     model.eval()
@@ -515,15 +535,15 @@ def load_model(model_path: Path, n_classes: int, device: str) -> Net:
 
 
 def run_single_threshold_experiment(
-    args: argparse.Namespace,
-    base_dir: Path,
-    dataset: ImageDataset,
-    y_all: np.ndarray,
-    train_idx: np.ndarray,
-    val_idx: np.ndarray,
-    setting_key: str,
-    run_id: str,
-    device: str,
+        args: argparse.Namespace,
+        base_dir: Path,
+        dataset: ImageDataset,
+        y_all: np.ndarray,
+        train_idx: np.ndarray,
+        val_idx: np.ndarray,
+        setting_key: str,
+        run_id: str,
+        device: str,
 ) -> Dict[str, object]:
     setting = EXPERIMENT_SETTINGS[setting_key]
 

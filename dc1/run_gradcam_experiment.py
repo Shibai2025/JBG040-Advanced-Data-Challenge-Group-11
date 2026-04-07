@@ -13,11 +13,12 @@ from typing import Dict, List, Optional, Sequence, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+import torch.nn as nn
 
 from dc1.gradcam import GradCAM
 from dc1.image_dataset import ImageDataset
 from dc1.net import Net
-
+from dc1.resnet import ResNet18Transfer
 
 CLASS_NAME_MAP = {
     0: "Atelectasis",
@@ -37,6 +38,7 @@ class GradCAMCandidate:
     experiment_group: str
     experiment_name: str
     source_run_id: str
+    architecture_hint: str
     threshold_value: Optional[float] = None
 
 
@@ -159,13 +161,6 @@ def resolve_local_path(raw_path: str) -> Path:
 
 
 def resolve_flexible_path(raw_path: str) -> Path:
-    """
-    Try multiple ways to resolve a path:
-    1. absolute path
-    2. relative to current working directory
-    3. relative to this script's folder (dc1/)
-    4. relative to project root (parent of dc1/)
-    """
     path = Path(raw_path).expanduser()
 
     if path.is_absolute():
@@ -210,6 +205,11 @@ def candidate_display_name(candidate: GradCAMCandidate) -> str:
         )
     return f"{candidate.experiment_group}/{candidate.experiment_name}"
 
+
+def infer_architecture_hint(path: Path) -> str:
+    if "resnet18" in str(path).lower():
+        return "resnet18"
+    return "net"
 
 def parse_checkpoint_metadata(checkpoint_path: Path) -> Tuple[str, str, str]:
     parts = list(checkpoint_path.parts)
@@ -292,9 +292,9 @@ def debug_print_candidates(candidates: Sequence[GradCAMCandidate]) -> None:
 
 
 def discover_candidates(
-    checkpoint: Optional[str],
-    threshold_config: Optional[str],
-    search_dir: str,
+        checkpoint: Optional[str],
+        threshold_config: Optional[str],
+        search_dir: str,
 ) -> List[GradCAMCandidate]:
     if checkpoint and threshold_config:
         raise ValueError("Use either --checkpoint or --threshold_config, not both.")
@@ -313,6 +313,7 @@ def discover_candidates(
                 experiment_group=experiment_group,
                 experiment_name=experiment_name,
                 source_run_id=source_run_id,
+                architecture_hint=infer_architecture_hint(checkpoint_path),
                 threshold_value=None,
             )
         ]
@@ -325,9 +326,9 @@ def discover_candidates(
         data = safe_load_json(config_path)
         source_model_path_raw = data.get("source_model_path")
         threshold_value_raw = (
-            data.get("selected_threshold")
-            or data.get("best_threshold")
-            or data.get("threshold")
+                data.get("selected_threshold")
+                or data.get("best_threshold")
+                or data.get("threshold")
         )
         if source_model_path_raw is None:
             raise ValueError(f"Threshold config missing source_model_path: {config_path}")
@@ -349,6 +350,7 @@ def discover_candidates(
                 experiment_group=experiment_group,
                 experiment_name=experiment_name,
                 source_run_id=source_run_id,
+                architecture_hint=infer_architecture_hint(model_path),
                 threshold_value=float(threshold_value_raw),
             )
         ]
@@ -410,6 +412,7 @@ def discover_candidates(
                 experiment_group=experiment_group,
                 experiment_name=experiment_name,
                 source_run_id=source_run_id,
+                architecture_hint=infer_architecture_hint(checkpoint_path),
                 threshold_value=None,
             )
         )
@@ -423,9 +426,9 @@ def discover_candidates(
 
         source_model_path_raw = data.get("source_model_path")
         threshold_value_raw = (
-            data.get("selected_threshold")
-            or data.get("best_threshold")
-            or data.get("threshold")
+                data.get("selected_threshold")
+                or data.get("best_threshold")
+                or data.get("threshold")
         )
 
         if source_model_path_raw is None or threshold_value_raw is None:
@@ -446,6 +449,7 @@ def discover_candidates(
                 experiment_group=experiment_group,
                 experiment_name=experiment_name,
                 source_run_id=source_run_id,
+                architecture_hint=infer_architecture_hint(model_path),
                 threshold_value=float(threshold_value_raw),
             )
         )
@@ -463,15 +467,15 @@ def discover_candidates(
 
 
 def ensure_output_dirs(
-    save_root: str,
-    candidate: GradCAMCandidate,
-    clean_previous_outputs: bool,
+        save_root: str,
+        candidate: GradCAMCandidate,
+        clean_previous_outputs: bool,
 ) -> Dict[str, Path]:
     root_dir = (
-        resolve_flexible_path(save_root)
-        / candidate.experiment_group
-        / candidate.experiment_name
-        / candidate.source_run_id
+            resolve_flexible_path(save_root)
+            / candidate.experiment_group
+            / candidate.experiment_name
+            / candidate.source_run_id
     )
 
     if candidate.candidate_type == "threshold" and candidate.threshold_value is not None:
@@ -537,15 +541,15 @@ def get_class_label(class_idx: int) -> str:
 
 
 def save_gradcam_figure(
-    image_np: np.ndarray,
-    pred_cam: np.ndarray,
-    true_cam: np.ndarray,
-    true_class: int,
-    pred_class: int,
-    pred_prob: float,
-    true_prob: float,
-    sample_index: int,
-    run_dir: Path,
+        image_np: np.ndarray,
+        pred_cam: np.ndarray,
+        true_cam: np.ndarray,
+        true_class: int,
+        pred_class: int,
+        pred_prob: float,
+        true_prob: float,
+        sample_index: int,
+        run_dir: Path,
 ) -> Path:
     case_type = get_case_type(true_class, pred_class)
     pair_folder = get_pair_folder(run_dir, case_type, true_class, pred_class)
@@ -733,9 +737,9 @@ def plot_correct_wrong_counts(records: Sequence[Dict[str, object]], reports_dir:
 
 
 def plot_top_confusion_pairs(
-    records: Sequence[Dict[str, object]],
-    reports_dir: Path,
-    top_k: int = 10,
+        records: Sequence[Dict[str, object]],
+        reports_dir: Path,
+        top_k: int = 10,
 ) -> Path:
     wrong_pairs: Counter = Counter()
     for row in records:
@@ -779,14 +783,14 @@ def plot_top_confusion_pairs(
 
 
 def save_text_report(
-    candidate: GradCAMCandidate,
-    n_classes: int,
-    all_records: Sequence[Dict[str, object]],
-    selected_entries: Sequence[Dict[str, object]],
-    correct_per_pair: int,
-    wrong_per_pair: int,
-    reports_dir: Path,
-    apply_threshold_filter: bool,
+        candidate: GradCAMCandidate,
+        n_classes: int,
+        all_records: Sequence[Dict[str, object]],
+        selected_entries: Sequence[Dict[str, object]],
+        correct_per_pair: int,
+        wrong_per_pair: int,
+        reports_dir: Path,
+        apply_threshold_filter: bool,
 ) -> Path:
     total = len(all_records)
     correct = sum(1 for row in all_records if row["true_class"] == row["pred_class"])
@@ -845,8 +849,12 @@ def save_text_report(
     return report_path
 
 
-def load_model_for_candidate(candidate: GradCAMCandidate, device: str, n_classes: int) -> Net:
-    model = Net(n_classes=n_classes).to(device)
+def load_model_for_candidate(candidate: GradCAMCandidate, device: str, n_classes: int) -> nn.Module:
+    if candidate.architecture_hint == "resnet18":
+        mode = "frozen_resnet18" if "frozen" in str(candidate.model_path).lower() else "finetuned_resnet18"
+        model = ResNet18Transfer(n_classes=n_classes, mode=mode).to(device)
+    else:
+        model = Net(n_classes=n_classes).to(device)
     state_dict = safe_load_state_dict(candidate.model_path, device)
     model.load_state_dict(state_dict)
     model.eval()
@@ -854,11 +862,11 @@ def load_model_for_candidate(candidate: GradCAMCandidate, device: str, n_classes
 
 
 def compute_full_records_for_candidate(
-    candidate: GradCAMCandidate,
-    model: Net,
-    test_dataset: ImageDataset,
-    device: str,
-    apply_threshold_filter: bool,
+        candidate: GradCAMCandidate,
+        model: nn.Module,
+        test_dataset: ImageDataset,
+        device: str,
+        apply_threshold_filter: bool,
 ) -> List[Dict[str, object]]:
     all_records: List[Dict[str, object]] = []
 
@@ -878,9 +886,9 @@ def compute_full_records_for_candidate(
 
             passes_threshold = True
             if (
-                candidate.candidate_type == "threshold"
-                and apply_threshold_filter
-                and candidate.threshold_value is not None
+                    candidate.candidate_type == "threshold"
+                    and apply_threshold_filter
+                    and candidate.threshold_value is not None
             ):
                 passes_threshold = max_prob >= float(candidate.threshold_value)
 
@@ -899,9 +907,9 @@ def compute_full_records_for_candidate(
 
 
 def select_records_for_export(
-    all_records: Sequence[Dict[str, object]],
-    correct_samples_per_pair: int,
-    wrong_samples_per_pair: int,
+        all_records: Sequence[Dict[str, object]],
+        correct_samples_per_pair: int,
+        wrong_samples_per_pair: int,
 ) -> List[Dict[str, object]]:
     selected_records: List[Dict[str, object]] = []
     saved_correct_count_per_pair: Dict[tuple, int] = defaultdict(int)
@@ -928,10 +936,10 @@ def select_records_for_export(
 
 
 def run_single_candidate(
-    candidate: GradCAMCandidate,
-    device: str,
-    test_dataset: ImageDataset,
-    args: argparse.Namespace,
+        candidate: GradCAMCandidate,
+        device: str,
+        test_dataset: ImageDataset,
+        args: argparse.Namespace,
 ) -> CandidateRunArtifacts:
     dirs = ensure_output_dirs(
         save_root=args.save_root,
@@ -951,7 +959,12 @@ def run_single_candidate(
     print(f"Grad-CAM output dir   : {run_dir}")
 
     model = load_model_for_candidate(candidate, device=device, n_classes=args.n_classes)
-    target_layer = model.cnn_layers[10]
+
+    if candidate.architecture_hint == "resnet18":
+        target_layer = model.model.layer4[-1]
+    else:
+        target_layer = model.cnn_layers[10]
+
     gradcam = GradCAM(model, target_layer)
 
     print(f"Scanning {len(test_dataset)} test samples...")
@@ -1102,8 +1115,8 @@ def save_batch_summary(results: Sequence[CandidateRunArtifacts], save_root: str)
 
 
 def choose_comparison_sample_indices(
-    artifacts: Sequence[CandidateRunArtifacts],
-    max_samples: int,
+        artifacts: Sequence[CandidateRunArtifacts],
+        max_samples: int,
 ) -> List[int]:
     if not artifacts:
         return []
@@ -1128,14 +1141,19 @@ def choose_comparison_sample_indices(
 
 
 def generate_compare_cam(
-    candidate: GradCAMCandidate,
-    device: str,
-    input_tensor: torch.Tensor,
-    true_class: int,
-    n_classes: int,
+        candidate: GradCAMCandidate,
+        device: str,
+        input_tensor: torch.Tensor,
+        true_class: int,
+        n_classes: int,
 ) -> Dict[str, object]:
     model = load_model_for_candidate(candidate, device=device, n_classes=n_classes)
-    target_layer = model.cnn_layers[10]
+
+    if candidate.architecture_hint == "resnet18":
+        target_layer = model.model.layer4[-1]
+    else:
+        target_layer = model.cnn_layers[10]
+
     gradcam = GradCAM(model, target_layer)
 
     with torch.no_grad():
@@ -1168,11 +1186,11 @@ def generate_compare_cam(
 
 
 def save_comparison_panel(
-    sample_index: int,
-    image_np: np.ndarray,
-    true_class: int,
-    comparison_rows: Sequence[Tuple[GradCAMCandidate, Dict[str, object]]],
-    out_dir: Path,
+        sample_index: int,
+        image_np: np.ndarray,
+        true_class: int,
+        comparison_rows: Sequence[Tuple[GradCAMCandidate, Dict[str, object]]],
+        out_dir: Path,
 ) -> Tuple[Path, Path]:
     n_models = len(comparison_rows)
     n_cols = 3
@@ -1252,12 +1270,12 @@ def save_comparison_panel(
 
 
 def run_same_sample_multi_model_comparison(
-    artifacts: Sequence[CandidateRunArtifacts],
-    test_dataset: ImageDataset,
-    device: str,
-    n_classes: int,
-    save_root: str,
-    max_samples: int,
+        artifacts: Sequence[CandidateRunArtifacts],
+        test_dataset: ImageDataset,
+        device: str,
+        n_classes: int,
+        save_root: str,
+        max_samples: int,
 ) -> Optional[Path]:
     if len(artifacts) < 2:
         print("Skipping comparison: need at least 2 candidates.")

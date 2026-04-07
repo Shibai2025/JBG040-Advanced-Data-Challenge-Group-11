@@ -42,11 +42,7 @@ import torch.nn as nn
 from dc1.batch_sampler import BatchSampler
 from dc1.image_dataset import ImageDataset
 from dc1.net import Net
-
-try:
-    from dc1.net_exp_architecture import NetExpArchitecture
-except Exception:
-    NetExpArchitecture = None  # type: ignore
+from dc1.resnet import ResNet18Transfer
 
 
 CLASS_NAMES = [
@@ -67,8 +63,6 @@ MODEL_PATTERNS = [
 THRESHOLD_PATTERNS = [
     "**/best_threshold_config.json",
 ]
-
-ARCHITECTURE_VARIANTS = ["baseline", "deeper", "kernel3", "kernel5"]
 
 
 @dataclass
@@ -211,10 +205,8 @@ def sanitize_label(text: str) -> str:
 
 
 def infer_architecture_hint(path: Path) -> str:
-    joined = str(path).lower()
-    for variant in ARCHITECTURE_VARIANTS:
-        if variant in joined:
-            return variant
+    if "resnet18" in str(path).lower():
+        return "resnet18"
     return "net"
 
 
@@ -472,32 +464,24 @@ def build_model_from_state_dict(
     device: str,
     state_dict,
 ) -> nn.Module:
+    if architecture_hint == "resnet18":
+        model = ResNet18Transfer(n_classes=n_classes, mode="finetuned_resnet18").to(device)
+        try:
+            model.load_state_dict(state_dict)
+            model.eval()
+            return model
+        except Exception as e:
+            print(f"Warning: Failed to load as finetuned resnet: {e}. Trying frozen.")
+            model = ResNet18Transfer(n_classes=n_classes, mode="frozen_resnet18").to(device)
+            model.load_state_dict(state_dict)
+            model.eval()
+            return model
+
+    # Fallback to Baseline Net
     model = Net(n_classes=n_classes).to(device)
-    try:
-        model.load_state_dict(state_dict)
-        model.eval()
-        return model
-    except Exception:
-        pass
-
-    if NetExpArchitecture is not None:
-        variants_to_try: List[str] = []
-        if architecture_hint in ARCHITECTURE_VARIANTS:
-            variants_to_try.append(architecture_hint)
-        for variant in ARCHITECTURE_VARIANTS:
-            if variant not in variants_to_try:
-                variants_to_try.append(variant)
-
-        for variant in variants_to_try:
-            model = NetExpArchitecture(n_classes=n_classes, variant=variant).to(device)
-            try:
-                model.load_state_dict(state_dict)
-                model.eval()
-                return model
-            except Exception:
-                continue
-
-    raise RuntimeError("Could not load checkpoint with supported architectures.")
+    model.load_state_dict(state_dict)
+    model.eval()
+    return model
 
 
 def run_model_forward(

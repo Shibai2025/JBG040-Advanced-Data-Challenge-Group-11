@@ -15,9 +15,7 @@ def run_script(step_name:str, command_list:list[str]) -> None:
 
 
 if __name__ == "__main__":
-    # Ensures we use the exact same virtual environment we are currently in
     python_exe = sys.executable
-
 
     run_script(
         step_name="Sample Representatives",
@@ -41,8 +39,13 @@ if __name__ == "__main__":
     )
 
     run_script(
-        step_name="Verifying Dataset",
-        command_list=[python_exe, "verification_of_cv_image_processing.py"]
+        step_name="Clip Limit Verification",
+        command_list=[python_exe, "lighting_verification.py"]
+    )
+
+    run_script(
+        step_name="Cropping Verification",
+        command_list=[python_exe, "verification_of_cropping.py"]
     )
 
     print("All Computer Vision Files Ran Successfully.")

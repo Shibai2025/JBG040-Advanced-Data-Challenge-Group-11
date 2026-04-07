@@ -17,15 +17,7 @@ import torch.nn as nn
 import torch.optim as optim
 
 from dc1.image_dataset import ImageDataset
-
-try:
-    from torchvision.models import resnet18
-except Exception as exc:  # pragma: no cover
-    raise ImportError(
-        "torchvision with ResNet18 support is required for this experiment. "
-        "Please ensure torchvision is installed in the active environment."
-    ) from exc
-
+from dc1.resnet import ResNet18Transfer
 
 CLASS_NAMES = [
     "Atelectasis",
@@ -123,87 +115,6 @@ class BalancedBatchIterator:
 
         return (n_items + self.batch_size - 1) // self.batch_size
 
-
-class ResNet18Transfer(nn.Module):
-    """
-    Fine-tunable ResNet18 for grayscale chest X-rays.
-
-    - Loads local pretrained ImageNet ResNet18 weights.
-    - Replaces conv1 to accept 1-channel input by averaging pretrained RGB kernels.
-    - Replaces final FC layer with a 6-class classifier.
-    - Applies grayscale normalization inside forward().
-    """
-
-    def __init__(self, n_classes: int) -> None:
-        super().__init__()
-
-        weights_path = Path(__file__).resolve().parent / "pretrained_weights" / "resnet18_imagenet.pth"
-
-        if not weights_path.is_file():
-            raise FileNotFoundError(
-                f"Missing local pretrained weights file: {weights_path}\n"
-                "Expected local ResNet18 ImageNet weights for submission-safe transfer learning."
-            )
-
-        backbone = resnet18(weights=None)
-        state_dict = torch.load(weights_path, map_location="cpu")
-        backbone.load_state_dict(state_dict)
-
-        old_conv = backbone.conv1
-        new_conv = nn.Conv2d(
-            in_channels=1,
-            out_channels=old_conv.out_channels,
-            kernel_size=old_conv.kernel_size,
-            stride=old_conv.stride,
-            padding=old_conv.padding,
-            bias=False,
-        )
-
-        with torch.no_grad():
-            new_conv.weight.copy_(old_conv.weight.mean(dim=1, keepdim=True))
-
-        backbone.conv1 = new_conv
-        backbone.fc = nn.Linear(backbone.fc.in_features, n_classes)
-
-        self.model = backbone
-
-        # Average ImageNet RGB stats for grayscale normalization.
-        self.register_buffer("norm_mean", torch.tensor([0.449], dtype=torch.float32).view(1, 1, 1, 1))
-        self.register_buffer("norm_std", torch.tensor([0.226], dtype=torch.float32).view(1, 1, 1, 1))
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = (x - self.norm_mean) / self.norm_std
-        return self.model(x)
-
-    def trainable_parameter_groups(
-        self,
-        head_lr: float,
-        backbone_lr: float,
-        weight_decay: float,
-    ) -> List[Dict[str, object]]:
-        backbone_params: List[nn.Parameter] = []
-        head_params: List[nn.Parameter] = []
-
-        for name, param in self.model.named_parameters():
-            if name.startswith("fc."):
-                head_params.append(param)
-            else:
-                backbone_params.append(param)
-
-        return [
-            {
-                "params": backbone_params,
-                "lr": backbone_lr,
-                "weight_decay": weight_decay,
-            },
-            {
-                "params": head_params,
-                "lr": head_lr,
-                "weight_decay": weight_decay,
-            },
-        ]
-
-
 def set_seed(seed: int, deterministic: bool = True) -> None:
     if deterministic:
         os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
@@ -240,9 +151,9 @@ def choose_device(force_cpu: bool = False) -> str:
 
 
 def stratified_split_indices(
-    y: np.ndarray,
-    val_ratio: float,
-    seed: int,
+        y: np.ndarray,
+        val_ratio: float,
+        seed: int,
 ) -> Tuple[np.ndarray, np.ndarray]:
     rng = np.random.default_rng(seed)
     y = np.asarray(y).reshape(-1).astype(int)
@@ -444,11 +355,11 @@ def save_classification_report(cm: np.ndarray, output_path: Path) -> None:
 
 
 def train_one_epoch(
-    model: nn.Module,
-    train_loader: BalancedBatchIterator,
-    optimizer: torch.optim.Optimizer,
-    loss_function: nn.Module,
-    device: str,
+        model: nn.Module,
+        train_loader: BalancedBatchIterator,
+        optimizer: torch.optim.Optimizer,
+        loss_function: nn.Module,
+        device: str,
 ) -> float:
     model.train()
     losses: List[float] = []
@@ -470,11 +381,11 @@ def train_one_epoch(
 
 
 def evaluate_model(
-    model: nn.Module,
-    data_loader: BalancedBatchIterator,
-    loss_function: nn.Module,
-    device: str,
-    n_classes: int,
+        model: nn.Module,
+        data_loader: BalancedBatchIterator,
+        loss_function: nn.Module,
+        device: str,
+        n_classes: int,
 ) -> Dict[str, object]:
     model.eval()
 
@@ -511,20 +422,39 @@ def evaluate_model(
 
 
 def build_model(n_classes: int) -> ResNet18Transfer:
-    return ResNet18Transfer(n_classes=n_classes)
+    return ResNet18Transfer(n_classes=n_classes, mode="finetuned_resnet18")
 
 
 def build_optimizer(
-    model: ResNet18Transfer,
-    head_lr: float,
-    backbone_lr: float,
-    weight_decay: float,
+        model: nn.Module,
+        head_lr: float,
+        backbone_lr: float,
+        weight_decay: float,
 ) -> torch.optim.Optimizer:
-    parameter_groups = model.trainable_parameter_groups(
-        head_lr=head_lr,
-        backbone_lr=backbone_lr,
-        weight_decay=weight_decay,
-    )
+    backbone_params = []
+    head_params = []
+
+    for name, param in model.named_parameters():
+        if not param.requires_grad:
+            continue
+        # The final layer in torchvision's ResNet is called 'fc'
+        if "fc." in name or "model.fc." in name:
+            head_params.append(param)
+        else:
+            backbone_params.append(param)
+
+    parameter_groups = [
+        {
+            "params": backbone_params,
+            "lr": backbone_lr,
+            "weight_decay": weight_decay,
+        },
+        {
+            "params": head_params,
+            "lr": head_lr,
+            "weight_decay": weight_decay,
+        },
+    ]
     return optim.AdamW(parameter_groups)
 
 
@@ -549,15 +479,15 @@ def ensure_run_directories(experiment_root: Path, experiment_name: str, run_id: 
 
 
 def train_single_setting(
-    args: argparse.Namespace,
-    base_dir: Path,
-    full_train_dataset: ImageDataset,
-    official_test_dataset: ImageDataset,
-    train_indices: np.ndarray,
-    val_indices: np.ndarray,
-    setting_name: str,
-    device: str,
-    run_group_id: str,
+        args: argparse.Namespace,
+        base_dir: Path,
+        full_train_dataset: ImageDataset,
+        official_test_dataset: ImageDataset,
+        train_indices: np.ndarray,
+        val_indices: np.ndarray,
+        setting_name: str,
+        device: str,
+        run_group_id: str,
 ) -> Dict[str, object]:
     deterministic = not args.non_deterministic
     set_seed(seed=args.seed, deterministic=deterministic)

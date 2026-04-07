@@ -8,7 +8,6 @@ targets = [np.percentile(means, p) for p in percentiles]
 
 representative_indices = []
 for t in targets:
-    # Find the index where the difference between image mean and target is smallest
     idx = (np.abs(means - t)).argmin()
     representative_indices.append(idx)
 

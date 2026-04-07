@@ -22,14 +22,15 @@ def build_parser() -> argparse.ArgumentParser:
         description="Run the full experiment pipeline from one entry point."
     )
 
-    # Optional switches: still useful for debugging specific stages
     parser.add_argument("--run_optimizer", action="store_true", help="Run only optimizer experiment.")
     parser.add_argument("--run_imbalance", action="store_true", help="Run only imbalance experiment.")
     parser.add_argument("--run_threshold", action="store_true", help="Run only threshold experiment.")
     parser.add_argument("--run_evaluation", action="store_true", help="Run only final evaluation.")
     parser.add_argument("--run_gradcam", action="store_true", help="Run only Grad-CAM experiment.")
     parser.add_argument("--run_computer", action="store_true", help="Run only Computer Vision experiment.")
-
+    parser.add_argument("--run_arch_capacity", action="store_true", help="Run Architecture Capacity (Baseline vs Custom CNN).")
+    parser.add_argument("--run_arch_transfer", action="store_true", help="Run ResNet18 Transfer Learning (Frozen vs Finetuned).")
+    parser.add_argument("--run_arch_balance", action="store_true", help="Run ResNet18 Balance Effect.")
     parser.add_argument("--force_cpu", action="store_true", help="Force CPU even if CUDA is available.")
     parser.add_argument("--seed", type=int, default=42, help="Random seed.")
     parser.add_argument("--epochs", type=int, default=10, help="Training epochs.")
@@ -46,7 +47,6 @@ def main() -> None:
     base_dir = Path(__file__).resolve().parent
     python_exe = sys.executable
 
-    # If user gives no stage flags, run the full pipeline by default
     any_stage_selected = any([
         args.run_optimizer,
         args.run_imbalance,
@@ -54,6 +54,9 @@ def main() -> None:
         args.run_evaluation,
         args.run_gradcam,
         args.run_computer,
+        args.run_arch_capacity,
+        args.run_arch_transfer,
+        args.run_arch_balance,
     ])
 
     if any_stage_selected:
@@ -63,6 +66,9 @@ def main() -> None:
         run_evaluation = args.run_evaluation
         run_gradcam = args.run_gradcam
         run_computer = args.run_computer
+        run_arch_capacity = args.run_arch_capacity
+        run_arch_transfer = args.run_arch_transfer
+        run_arch_balance = args.run_arch_balance
         print("Specific pipeline stages selected by user.")
     else:
         run_optimizer = True
@@ -71,6 +77,9 @@ def main() -> None:
         run_evaluation = True
         run_gradcam = True
         run_computer = True
+        run_arch_capacity = True
+        run_arch_transfer = True
+        run_arch_balance = True
         print("No specific stage selected. Running the full pipeline by default.")
 
     common_flags: list[str] = []
@@ -78,67 +87,88 @@ def main() -> None:
         common_flags.append("--force_cpu")
 
     try:
+        if not any_stage_selected or run_arch_transfer or run_arch_balance:
+            cmd = [python_exe, "save_resnet18.py"]
+            run_step("Download Pre-trained ResNet18 Weights", cmd, base_dir)
+
         if run_optimizer:
             cmd = [
-                python_exe,
-                "main_experiment_optimizer.py",
-                "--nb_epochs",
-                str(args.epochs),
-                "--batch_size",
-                str(args.batch_size),
-                "--val_batch_size",
-                str(args.val_batch_size),
-                "--seed",
-                str(args.seed),
-                "--val_ratio",
-                str(args.val_ratio),
-            ] + common_flags
+                      python_exe, "main_experiment_optimizer.py",
+                      "--nb_epochs", str(args.epochs),
+                      "--batch_size", str(args.batch_size),
+                      "--val_batch_size", str(args.val_batch_size),
+                      "--seed", str(args.seed),
+                      "--val_ratio", str(args.val_ratio),
+                  ] + common_flags
             run_step("Optimizer Experiment", cmd, base_dir)
 
         if run_imbalance:
             cmd = [
-                python_exe,
-                "main_experiment_imbalance.py",
-                "--epochs",
-                str(args.epochs),
-                "--batch_size",
-                str(args.batch_size),
-                "--seed",
-                str(args.seed),
-                "--val_ratio",
-                str(args.val_ratio),
-            ] + common_flags
+                      python_exe, "main_experiment_imbalance.py",
+                      "--epochs", str(args.epochs),
+                      "--batch_size", str(args.batch_size),
+                      "--seed", str(args.seed),
+                      "--val_ratio", str(args.val_ratio),
+                  ] + common_flags
             run_step("Imbalance Experiment", cmd, base_dir)
+
+        if run_arch_capacity:
+            cmd = [
+                      python_exe, "main_experiment_architecture_capacity.py",
+                      "--epochs", str(args.epochs),
+                      "--batch_size", str(args.batch_size),
+                      "--val_batch_size", str(args.val_batch_size),
+                      "--seed", str(args.seed),
+                      "--val_ratio", str(args.val_ratio),
+                  ] + common_flags
+            run_step("Architecture Capacity Test", cmd, base_dir)
+
+        if run_arch_transfer:
+            cmd = [
+                      python_exe, "main_experiment_resnet18_transfer.py",
+                      "--epochs", str(args.epochs),
+                      "--batch_size", str(args.batch_size),
+                      "--val_batch_size", str(args.val_batch_size),
+                      "--seed", str(args.seed),
+                      "--val_ratio", str(args.val_ratio),
+                  ] + common_flags
+            run_step("ResNet18 Transfer Learning Test", cmd, base_dir)
+
+        if run_arch_balance:
+            cmd = [
+                      python_exe, "main_experiment_resnet18_balance_effect.py",
+                      "--epochs", str(args.epochs),
+                      "--batch_size", str(args.batch_size),
+                      "--val_batch_size", str(args.val_batch_size),
+                      "--seed", str(args.seed),
+                      "--val_ratio", str(args.val_ratio),
+                  ] + common_flags
+            run_step("ResNet18 Balance Effect Test", cmd, base_dir)
 
         if run_threshold:
             cmd = [
-                python_exe,
-                "main_experiment_threshold.py",
-                "--batch_size",
-                str(args.val_batch_size),
-                "--seed",
-                str(args.seed),
-                "--val_ratio",
-                str(args.val_ratio),
-            ] + common_flags
+                      python_exe, "main_experiment_threshold.py",
+                      "--settings", "balanced_batch", "severity_weighted_loss", "resnet18_transfer",
+                      "resnet18_balanced",
+                      "--batch_size", str(args.val_batch_size),
+                      "--seed", str(args.seed),
+                      "--val_ratio", str(args.val_ratio),
+                  ] + common_flags
             run_step("Threshold Experiment", cmd, base_dir)
 
         if run_evaluation:
             cmd = [
-                python_exe,
-                "experiment_evaluation.py",
-                "--batch_size",
-                str(args.val_batch_size),
-            ] + common_flags
+                      python_exe, "experiment_evaluation.py",
+                      "--batch_size", str(args.val_batch_size),
+                  ] + common_flags
             run_step("Experiment Evaluation", cmd, base_dir)
 
         if run_gradcam:
             cmd = [
-                python_exe,
-                "run_gradcam_experiment.py",
-                "--comparison_mode",
-                "same_sample_multi_model",
-            ] + common_flags
+                      python_exe, "run_gradcam_experiment.py",
+                      "--comparison_mode",
+                      "same_sample_multi_model",
+                  ] + common_flags
             run_step("Grad-CAM Experiment", cmd, base_dir)
 
         if run_computer:

@@ -16,7 +16,6 @@ import torch.nn as nn
 from dc1.batch_sampler import BatchSampler
 from dc1.image_dataset import ImageDataset
 from dc1.net import Net
-
 from dc1.resnet import ResNet18Transfer
 
 CLASS_NAMES = [
@@ -46,7 +45,7 @@ EXPERIMENT_SETTINGS = {
         "optimizer": "AdamW",
     },
     "resnet18_transfer": {
-        "source_experiment_group": "experiment_resnet18_transfer",
+        "source_experiment_group": "experiment_resnet18_transfer/finetuned_resnet18",
         "source_experiment_name": "architecture_test2_finetuned_resnet18",
         "threshold_experiment_group": "resnet18_transfer",
         "threshold_experiment_name": "resnet18_transfer_threshold",
@@ -54,7 +53,7 @@ EXPERIMENT_SETTINGS = {
         "optimizer": "AdamW",
     },
     "resnet18_balanced": {
-        "source_experiment_group": "experiment_resnet18_balance_effect",
+        "source_experiment_group": "experiment_resnet18_balance_effect/balanced_batch",
         "source_experiment_name": "architecture_test3_balanced_batch",
         "threshold_experiment_group": "resnet18_balanced",
         "threshold_experiment_name": "resnet18_balanced_threshold",
@@ -118,11 +117,13 @@ def resolve_dir(raw_dir: str, default_base: Path) -> Path:
 
 
 def save_json(data: Dict[str, object], output_path: Path) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
 
 def save_text(lines: List[str], output_path: Path) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
 
@@ -286,16 +287,6 @@ def threshold_sweep(
         y_prob: np.ndarray,
         thresholds: np.ndarray,
 ) -> List[Dict[str, object]]:
-    """
-    Selective prediction based on confidence threshold:
-      keep sample if max_prob >= threshold
-
-    For each threshold, compute:
-    - coverage
-    - kept accuracy
-    - kept macro-F1
-    - number of kept samples
-    """
     results: List[Dict[str, object]] = []
 
     if len(y_true) == 0 or y_prob.size == 0:
@@ -528,7 +519,7 @@ def load_model(model_path: Path, n_classes: int, device: str) -> nn.Module:
     else:
         model = Net(n_classes=n_classes).to(device)
 
-    state_dict = torch.load(model_path, map_location=device)
+    state_dict = torch.load(model_path, map_location=device, weights_only=True)
     model.load_state_dict(state_dict)
     model.eval()
     return model

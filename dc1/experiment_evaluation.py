@@ -604,6 +604,8 @@ def discover_model_candidates(search_dirs: Sequence[Path]) -> List[Candidate]:
                     continue
                 if path in seen:
                     continue
+                if "stronger_custom_cnn" in str(path).lower():
+                    continue
                 seen.add(path)
 
                 experiment_group, experiment_name, run_id = maybe_parse_experiment_metadata(path)

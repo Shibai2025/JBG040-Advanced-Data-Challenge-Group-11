@@ -403,6 +403,8 @@ def discover_candidates(
     candidates: List[GradCAMCandidate] = []
 
     for checkpoint_path in unique_model_paths:
+        if "stronger_custom_cnn" in str(checkpoint_path).lower():
+            continue
         experiment_group, experiment_name, source_run_id = parse_checkpoint_metadata(checkpoint_path)
         candidates.append(
             GradCAMCandidate(
@@ -418,6 +420,8 @@ def discover_candidates(
         )
 
     for config_path in unique_threshold_paths:
+        if "stronger_custom_cnn" in str(config_path).lower():
+            continue
         try:
             data = safe_load_json(config_path)
         except Exception as exc:

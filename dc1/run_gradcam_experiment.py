@@ -862,6 +862,8 @@ def load_model_for_candidate(candidate: GradCAMCandidate, device: str, n_classes
     state_dict = safe_load_state_dict(candidate.model_path, device)
     model.load_state_dict(state_dict)
     model.eval()
+    for param in model.parameters():
+        param.requires_grad = True
     return model
 
 

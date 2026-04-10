@@ -27,7 +27,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--run_threshold", action="store_true", help="Run only threshold experiment.")
     parser.add_argument("--run_evaluation", action="store_true", help="Run only final evaluation.")
     parser.add_argument("--run_gradcam", action="store_true", help="Run only Grad-CAM experiment.")
-    parser.add_argument("--run_computer", action="store_true", help="Run only Computer Vision experiment.")
     parser.add_argument("--run_arch_capacity", action="store_true", help="Run Architecture Capacity (Baseline vs Custom CNN).")
     parser.add_argument("--run_arch_transfer", action="store_true", help="Run ResNet18 Transfer Learning (Frozen vs Finetuned).")
     parser.add_argument("--run_arch_balance", action="store_true", help="Run ResNet18 Balance Effect.")
@@ -53,7 +52,6 @@ def main() -> None:
         args.run_threshold,
         args.run_evaluation,
         args.run_gradcam,
-        args.run_computer,
         args.run_arch_capacity,
         args.run_arch_transfer,
         args.run_arch_balance,
@@ -65,7 +63,6 @@ def main() -> None:
         run_threshold = args.run_threshold
         run_evaluation = args.run_evaluation
         run_gradcam = args.run_gradcam
-        run_computer = args.run_computer
         run_arch_capacity = args.run_arch_capacity
         run_arch_transfer = args.run_arch_transfer
         run_arch_balance = args.run_arch_balance
@@ -76,7 +73,6 @@ def main() -> None:
         run_threshold = True
         run_evaluation = True
         run_gradcam = True
-        run_computer = True
         run_arch_capacity = True
         run_arch_transfer = True
         run_arch_balance = True
@@ -170,13 +166,6 @@ def main() -> None:
                       "same_sample_multi_model",
                   ] + common_flags
             run_step("Grad-CAM Experiment", cmd, base_dir)
-
-        if run_computer:
-            cmd = [
-                python_exe,
-                "run_computer_vision_experiment.py",
-            ]
-            run_step("Computer Vision Image Cropping Experiment", cmd, base_dir)
 
         print("\n" + "=" * 100)
         print("Pipeline completed successfully.")

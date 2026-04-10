@@ -27,7 +27,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--run_threshold", action="store_true", help="Run only threshold experiment.")
     parser.add_argument("--run_evaluation", action="store_true", help="Run only final evaluation.")
     parser.add_argument("--run_gradcam", action="store_true", help="Run only Grad-CAM experiment.")
-    parser.add_argument("--run_arch_capacity", action="store_true", help="Run Architecture Capacity (Baseline vs Custom CNN).")
     parser.add_argument("--run_arch_transfer", action="store_true", help="Run ResNet18 Transfer Learning (Frozen vs Finetuned).")
     parser.add_argument("--run_arch_balance", action="store_true", help="Run ResNet18 Balance Effect.")
     parser.add_argument("--force_cpu", action="store_true", help="Force CPU even if CUDA is available.")
@@ -52,7 +51,6 @@ def main() -> None:
         args.run_threshold,
         args.run_evaluation,
         args.run_gradcam,
-        args.run_arch_capacity,
         args.run_arch_transfer,
         args.run_arch_balance,
     ])
@@ -63,7 +61,6 @@ def main() -> None:
         run_threshold = args.run_threshold
         run_evaluation = args.run_evaluation
         run_gradcam = args.run_gradcam
-        run_arch_capacity = args.run_arch_capacity
         run_arch_transfer = args.run_arch_transfer
         run_arch_balance = args.run_arch_balance
         print("Specific pipeline stages selected by user.")
@@ -73,7 +70,6 @@ def main() -> None:
         run_threshold = True
         run_evaluation = True
         run_gradcam = True
-        run_arch_capacity = True
         run_arch_transfer = True
         run_arch_balance = True
         print("No specific stage selected. Running the full pipeline by default.")
@@ -107,17 +103,6 @@ def main() -> None:
                       "--val_ratio", str(args.val_ratio),
                   ] + common_flags
             run_step("Imbalance Experiment", cmd, base_dir)
-
-        if run_arch_capacity:
-            cmd = [
-                      python_exe, "main_experiment_architecture_capacity.py",
-                      "--epochs", str(args.epochs),
-                      "--batch_size", str(args.batch_size),
-                      "--val_batch_size", str(args.val_batch_size),
-                      "--seed", str(args.seed),
-                      "--val_ratio", str(args.val_ratio),
-                  ] + common_flags
-            run_step("Architecture Capacity Test", cmd, base_dir)
 
         if run_arch_transfer:
             cmd = [

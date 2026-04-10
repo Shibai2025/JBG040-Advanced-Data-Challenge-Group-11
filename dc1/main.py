@@ -4,7 +4,9 @@ import argparse
 import subprocess
 import sys
 from pathlib import Path
+import os
 
+os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
 def run_step(step_name: str, cmd: list[str], cwd: Path) -> None:
     print("\n" + "=" * 100)
